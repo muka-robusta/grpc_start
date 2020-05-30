@@ -1,10 +1,7 @@
 package com.github.one2story.grpc_start.greeting.client;
 
 import com.proto.dummy.DummyServiceGrpc;
-import com.proto.greet.GreetRequest;
-import com.proto.greet.GreetResponse;
-import com.proto.greet.GreetServiceGrpc;
-import com.proto.greet.Greeting;
+import com.proto.greet.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -26,16 +23,33 @@ public class GreetingClient {
 
         GreetServiceGrpc.GreetServiceBlockingStub greetClient = GreetServiceGrpc.newBlockingStub(channel);
 
-        Greeting greeting = Greeting.newBuilder()
-                .setFirstName("Ilya")
-                .setLastName("Sav")
+        //------------
+        // create a protobuf greeting message
+//        Greeting greeting = Greeting.newBuilder()
+//                .setFirstName("Ilya")
+//                .setLastName("Sav")
+//                .build();
+//
+//        // creating greet request
+//        GreetRequest greetRequest = GreetRequest.newBuilder()
+//                .setGreeting(greeting)
+//                .build();
+//
+//        // call the RPC and get back greet response (protobuf)
+//        GreetResponse greetResponce = greetClient.greet(greetRequest);
+//
+//        logger.info(greetResponce.getResult());
+
+        // Server streaming
+        GreetManyTimesRequest greetManyTimesRequest = GreetManyTimesRequest.newBuilder()
+                .setGreeting(Greeting.newBuilder().setFirstName("Ilya"))
                 .build();
 
-        GreetRequest greetRequest = GreetRequest.newBuilder()
-                .setGreeting(greeting)
-                .build();
-
-        GreetResponse greetResponce = greetClient.greet(greetRequest);
+        // streaming the responses in a blocking manner
+        greetClient.greetManyTimes(greetManyTimesRequest)
+                .forEachRemaining(greetManyTimesResponse -> {
+                    System.out.println(greetManyTimesResponse.getResult());
+                });
 
         //do smth
         logger.info("Shutting down channel");
