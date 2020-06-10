@@ -27,7 +27,9 @@ public class CalculatorClient {
         logger.info("Channel created");
         // doSumCall(channel);
         // doNumberDecomposition(channel, new Integer(125));
-        doClientStreamingCall(channel);
+//        doClientStreamingCall(channel);
+        doBiDirectionalCall(channel);
+
         channel.shutdown();
     }
 
@@ -106,6 +108,51 @@ public class CalculatorClient {
         requestObserver.onCompleted();
         try {
             latch.await(3, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void doBiDirectionalCall(ManagedChannel channel)
+    {
+        CalculatorServiceGrpc.CalculatorServiceStub asyncClient = CalculatorServiceGrpc.newStub(channel);
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        StreamObserver<FindMaximumRequest> requestObserver = asyncClient.findMaximum(new StreamObserver<FindMaximumResponse>() {
+            @Override
+            public void onNext(FindMaximumResponse value) {
+                System.out.println("Got new maximum from server: " + value.getResult());
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                latch.countDown();
+            }
+
+            @Override
+            public void onCompleted() {
+                System.out.println("Server is done sending messages");
+            }
+        });
+
+        Double numbers[] = {1.0, 22.0, 33.0, 45.0, 98.0, 1.0, -5.0, -9.25, 3.0, 5.0};
+        for(Double number: numbers)
+        {
+            requestObserver.onNext(FindMaximumRequest.newBuilder()
+                    .setNumber(number)
+                    .build());
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        // we expect the average
+        requestObserver.onCompleted();
+        try {
+            latch.await(10, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
