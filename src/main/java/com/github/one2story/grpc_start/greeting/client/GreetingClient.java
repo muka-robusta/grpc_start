@@ -2,11 +2,13 @@ package com.github.one2story.grpc_start.greeting.client;
 
 import com.proto.dummy.DummyServiceGrpc;
 import com.proto.greet.*;
-import io.grpc.Channel;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import io.grpc.*;
+import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
+import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
 import io.grpc.stub.StreamObserver;
 
+import javax.net.ssl.SSLException;
+import java.io.File;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -17,7 +19,7 @@ public class GreetingClient {
     ManagedChannel channel;
     static Logger logger;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SSLException {
         logger = Logger.getLogger(GreetingClient.class.getName());
         logger.info("gRPC client");
 
@@ -26,20 +28,78 @@ public class GreetingClient {
 
     }
 
-    public void run()
-    {
+    public void run() throws SSLException {
+
+
         channel = ManagedChannelBuilder
                 .forAddress("localhost", 50051)
                 .usePlaintext()
                 .build();
-//        doUnaryCall(channel);
+
+
+
+        ManagedChannel secureChannel = NettyChannelBuilder.forAddress("localhost", 50051)
+                .sslContext(GrpcSslContexts.forClient().trustManager(new File("ssl/ca.crt")).build())
+                .build();
+
+
+
+        doUnaryCall(secureChannel);
 //        doServerStreamingCall(channel);
 //        doClientStreamingCall(channel);
 
-        doBiDirectionalCall(channel);
+//        doBiDirectionalCall(channel);
+
+//        doUnaryCallWithDeadline(channel);
+
+
 
         logger.info("Shutting down channel");
-        channel.shutdown();
+        secureChannel.shutdown();
+        // channel.shutdown();
+    }
+
+    private void doUnaryCallWithDeadline(ManagedChannel channel)
+    {
+        GreetServiceGrpc.GreetServiceBlockingStub blockingStub = GreetServiceGrpc.newBlockingStub(channel);
+
+        // first call (3000 ms)
+        try {
+            System.out.println("Sending a request with deadline of 3000 ms.");
+            GreetWithDeadlineResponse response = blockingStub.withDeadline(Deadline.after(3000, TimeUnit.MILLISECONDS)).greetWithDeadline(GreetWithDeadlineRequest.newBuilder()
+                    .setGreeting(Greeting.newBuilder()
+                            .setFirstName("Ilya")
+                            .build())
+                    .build());
+            System.out.println(response.getResult());
+        }catch (StatusRuntimeException ex)
+        {
+            if(ex.getStatus() == Status.DEADLINE_EXCEEDED)
+            {
+                System.out.println("Deadline has been exceeded, we dont want the answer");
+            }else {
+                ex.printStackTrace();
+            }
+        }
+
+        // second call (100 ms)
+        try {
+            System.out.println("Sending a request with deadline of 500 ms.");
+            GreetWithDeadlineResponse response = blockingStub.withDeadline(Deadline.after(100, TimeUnit.MILLISECONDS)).greetWithDeadline(GreetWithDeadlineRequest.newBuilder()
+                    .setGreeting(Greeting.newBuilder()
+                            .setFirstName("Ilya")
+                            .build())
+                    .build());
+            System.out.println(response.getResult());
+        }catch (StatusRuntimeException ex)
+        {
+            if(ex.getStatus() == Status.DEADLINE_EXCEEDED)
+            {
+                System.out.println("Deadline has been exceeded, we dont want the answer");
+            }else {
+                ex.printStackTrace();
+            }
+        }
     }
 
     private void doBiDirectionalCall(ManagedChannel channel)

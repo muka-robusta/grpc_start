@@ -1,7 +1,9 @@
 package com.github.one2story.grpc_start.greeting.server;
 
 import com.proto.greet.*;
+import io.grpc.Context;
 import io.grpc.stub.StreamObserver;
+import org.omg.CORBA.INTERNAL;
 
 public class GreetServiceImpl extends GreetServiceGrpc.GreetServiceImplBase {
     @Override
@@ -105,5 +107,36 @@ public class GreetServiceImpl extends GreetServiceGrpc.GreetServiceImplBase {
 
         return requestObserver;
 
+    }
+
+    @Override
+    public void greetWithDeadline(GreetWithDeadlineRequest request, StreamObserver<GreetWithDeadlineResponse> responseObserver) {
+
+        Context current = Context.current();
+
+        try {
+            for(int i = 0; i < 3; i++)
+            {
+                if(!current.isCancelled()){
+                    System.out.println("Sleep for 100 ms");
+                    Thread.sleep(100);
+                }else {
+                    return;
+                }
+            }
+
+            System.out.println("Send response");
+            String resultStr = "Hello, " + request.getGreeting().getFirstName();
+            responseObserver.onNext(GreetWithDeadlineResponse.newBuilder()
+                    .setResult(resultStr)
+                    .build());
+
+        }catch(InterruptedException ex)
+        {
+            ex.printStackTrace();
+        }
+
+
+        responseObserver.onCompleted();
     }
 }

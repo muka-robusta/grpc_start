@@ -1,6 +1,7 @@
 package com.github.one2story.grpc_start.calculator.server;
 
 import com.proto.calculator.*;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 
 public class CalculatorServiceImpl extends CalculatorServiceGrpc.CalculatorServiceImplBase {
@@ -110,5 +111,29 @@ public class CalculatorServiceImpl extends CalculatorServiceGrpc.CalculatorServi
             }
         };
         return streamObserver;
+    }
+
+    @Override
+    public void squareRoot(SquareRootRequest request, StreamObserver<SquareRootResponse> responseObserver) {
+
+        Double number = request.getNumber();
+        if(number >= 0)
+        {
+            double number_root = Math.sqrt(number);
+            responseObserver.onNext(SquareRootResponse.newBuilder()
+                    .setNumberRoot(number_root)
+                    .build());
+            responseObserver.onCompleted();
+        }else {
+            // we construct the exception
+            responseObserver.onError(
+                    Status.INVALID_ARGUMENT
+                            .withDescription("The number is sent is not posotive")
+                            .augmentDescription("Number sent: " + number)
+                            .asRuntimeException()
+
+            );
+        }
+
     }
 }

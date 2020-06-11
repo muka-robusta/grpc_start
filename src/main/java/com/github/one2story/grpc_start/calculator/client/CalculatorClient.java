@@ -3,6 +3,7 @@ package com.github.one2story.grpc_start.calculator.client;
 import com.proto.calculator.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
 import java.util.ArrayList;
@@ -28,7 +29,10 @@ public class CalculatorClient {
         // doSumCall(channel);
         // doNumberDecomposition(channel, new Integer(125));
 //        doClientStreamingCall(channel);
-        doBiDirectionalCall(channel);
+//        doBiDirectionalCall(channel);
+
+        doSquareErrorCall(channel);
+
 
         channel.shutdown();
     }
@@ -158,4 +162,22 @@ public class CalculatorClient {
         }
     }
 
+    private void doSquareErrorCall(ManagedChannel channel)
+    {
+        CalculatorServiceGrpc.CalculatorServiceBlockingStub blockingStub = CalculatorServiceGrpc.newBlockingStub(channel);
+        double number = -1;
+
+        try {
+            blockingStub.squareRoot(SquareRootRequest.newBuilder()
+                    .setNumber(number)
+                    .build());
+
+        }catch(StatusRuntimeException ex)
+        {
+            System.err.println("Got an exception while counting square root");
+            ex.printStackTrace();
+
+        }
+
+    }
 }
