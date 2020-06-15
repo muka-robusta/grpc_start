@@ -24,7 +24,7 @@ public class BlogClient {
 
         BlogServiceGrpc.BlogServiceBlockingStub blogClient = BlogServiceGrpc.newBlockingStub(channel);
 
-        /*
+/*
         Blog blog = Blog.newBuilder()
                 .setTitle("Elixir - is my love")
                 .setContent("I love you Elixir")
@@ -46,8 +46,9 @@ public class BlogClient {
         }
 
         String blogId = createblogResponse.getBlog().getId();
-        */
-        String blogId = "5ee4eb2c90b14f54452c6e5e";
+
+
+//        String blogId = "5ee4eb2c90b14f54452c6e5e";
         System.out.println(blogId);
 
 
@@ -61,6 +62,50 @@ public class BlogClient {
                 .setId("fake-id")
                 .build());*/
 
+        // updateBlog(blogClient);
+        // deleteBlog(blogClient);
+        listBlogs(blogClient);
 
+
+    }
+
+    private void updateBlog(BlogServiceGrpc.BlogServiceBlockingStub blogClient)
+    {
+        String replacementId = "5ee4d6c490b14f406075ba56";
+
+        Blog blogToUpdate = Blog.newBuilder()
+                .setAuthor("Ilya")
+                .setContent("This content is replaced")
+                .setTitle("This title is replaced")
+                .setId(replacementId)
+                .build();
+
+        UpdateBlogResponse updateResponse = blogClient.updateBlog(UpdateBlogRequest.newBuilder()
+                .setBlog(blogToUpdate)
+                .build());
+
+        System.out.println("Updated blog");
+        System.out.println(updateResponse.toString());
+    }
+
+    private void deleteBlog(BlogServiceGrpc.BlogServiceBlockingStub blogClient)
+    {
+        String blogId = "5ee77a757525445a5decb4de";
+
+        System.out.println("Deleting blog by ID");
+        DeleteBlogResponse deleteBlogResponse = blogClient.deleteBlog(DeleteBlogRequest.newBuilder()
+                .setBlogId(blogId)
+                .build());
+    }
+
+    private void listBlogs(BlogServiceGrpc.BlogServiceBlockingStub blogClient)
+    {
+        // here we list blogs in our database
+        blogClient.listBlog(ListBlogRequest.newBuilder()
+                .build()).forEachRemaining(
+                listBlogResponse -> {
+                    System.out.println(listBlogResponse.getBlog().toString());
+                }
+        );
     }
 }
